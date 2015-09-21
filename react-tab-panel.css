@@ -1,0 +1,23 @@
+.basic-tabs .basic-tabs-strip .arrow {
+  top: 50%;
+  left: 50%;
+  display: inline-block;
+  position: absolute;
+  border-left: 0px solid transparent;
+  border-right: 0px solid transparent;
+}
+.basic-tabs .basic-tabs-scroller {
+  background: #808080;
+}
+.basic-tabs .basic-tabs-scroller.left {
+  border-right: 1px solid #404040;
+}
+.basic-tabs .basic-tabs-scroller.left .arrow {
+  transform: translate3d(-75%, -50%, 0px);
+}
+.basic-tabs .basic-tabs-scroller.right {
+  border-left: 1px solid #404040;
+}
+.basic-tabs .basic-tabs-scroller.right .arrow {
+  transform: translate3d(-25%, -50%, 0px);
+}
