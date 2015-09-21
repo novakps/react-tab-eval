@@ -5,8 +5,8 @@ module.exports = {
   },
   module: {
     loaders: [{
-        test: /\.jsx$/,
-        loader: 'babel'
+      test: /\.jsx$/,
+      loader: 'babel'
     }]
   },
   externals: {
@@ -15,4 +15,4 @@ module.exports = {
   resolve: {
     extensions: ['', '.js', '.jsx']
   }
-}
+};
