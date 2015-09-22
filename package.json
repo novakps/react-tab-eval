@@ -9,7 +9,8 @@
   "dependencies": {
     "rc-tabs": "^5.3.3",
     "react": "^0.13.3",
-    "react-tab-panel": "^1.0.4"
+    "react-tab-panel": "^1.0.4",
+    "react-tabs": "^0.4.1"
   },
   "devDependencies": {
     "babel-core": "^5.8.25",

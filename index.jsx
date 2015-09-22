@@ -1,7 +1,46 @@
 var React = require('react');
-var ReactTabPanel = require('react-tab-panel');
+
+// react-tabs
+var ReactTabs = require('react-tabs');
+var Tab = ReactTabs.Tab;
+var Tabs = ReactTabs.Tabs;
+var TabList = ReactTabs.TabList;
+var TabPanel = ReactTabs.TabPanel;
+
+var ReactTabsApp = React.createClass({
+  handleSelect: function (index, last) {
+    console.log('Selected tab: ' + index + ', Last tab: ' + last);
+  },
+
+  render: function () {
+    return (
+      <Tabs onSelect={this.handleSelect} selectedIndex={0}>
+        <TabList>
+          <Tab>Pros</Tab>
+          <Tab>Cons</Tab>
+        </TabList>
+        <TabPanel>
+          <ul>
+            <li>Styled</li>
+            <li>Simple</li>
+            <li>Clean</li>
+          </ul>
+        </TabPanel>
+        <TabPanel>
+          <ul>
+            <li>None</li>
+          </ul>
+        </TabPanel>
+      </Tabs>
+    );
+  }
+});
+
+React.render(<ReactTabsApp />, document.getElementById('react-tabs-content'));
+
 
 // react-tab-panel
+var ReactTabPanel = require('react-tab-panel');
 var ReactTabPanelApp = React.createClass({
   getInitialState: function() {
     return {
