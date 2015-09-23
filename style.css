@@ -1,4 +1,4 @@
-.react-tabs-container {
+#tabs-container {
   border: 1px solid #000;
   width: 300px;
   height: 400px;
@@ -10,6 +10,14 @@
 }
 
 .react-tabs [role="tablist"] {
-  overflow-x: auto;
-  overflow-y: hidden;
+  /*overflow-x: auto;
+  overflow-y: hidden;*/
+}
+
+.react-tab-content {
+  display: none;
+}
+
+.react-tab-content.active {
+  display: block;
 }
