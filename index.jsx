@@ -12,25 +12,44 @@ var ReactTabsApp = React.createClass({
     console.log('Selected tab: ' + index + ', Last tab: ' + last);
   },
 
+  getInitialState: function() {
+    return {
+      tabs: [{
+        icon: 'http://placehold.it/15x15',
+        title: 'Tab 1',
+        content: 'Tab content 1'
+      }, {
+        icon: 'http://placehold.it/15x15',
+        title: 'Tab 2',
+        content: 'Tab content 2'
+      }, {
+        icon: 'http://placehold.it/15x15',
+        title: 'Tab 3',
+        content: 'Tab content 3'
+      }, {
+        icon: 'http://placehold.it/15x15',
+        title: 'Tab 4',
+        content: 'Tab content 4'
+      }, {
+        icon: 'http://placehold.it/15x15',
+        title: 'Tab 5',
+        content: 'Tab content 5'
+      }]
+    };
+  },
+
   render: function () {
+    var tabs = this.state.tabs.map(function(tab) {
+      return (<Tab><img src={tab.icon} /> {tab.title}</Tab>);
+    });
+
+    var tabPanels = this.state.tabs.map(function(tab) {
+      return (<TabPanel>{tab.content}</TabPanel>);
+    });
+
     return (
       <Tabs onSelect={this.handleSelect} selectedIndex={0}>
-        <TabList>
-          <Tab>Pros</Tab>
-          <Tab>Cons</Tab>
-        </TabList>
-        <TabPanel>
-          <ul>
-            <li>Styled</li>
-            <li>Simple</li>
-            <li>Clean</li>
-          </ul>
-        </TabPanel>
-        <TabPanel>
-          <ul>
-            <li>None</li>
-          </ul>
-        </TabPanel>
+        <TabList>{tabs}</TabList>{tabPanels}
       </Tabs>
     );
   }
