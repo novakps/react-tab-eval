@@ -10,8 +10,8 @@
 }
 
 .react-tabs [role="tablist"] {
-  /*overflow-x: auto;
-  overflow-y: hidden;*/
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .react-tab-content {
