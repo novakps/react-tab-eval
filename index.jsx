@@ -3,6 +3,7 @@ var ReactTabs = require('react-tabs');
 
 // Models
 var ContentType = {
+  HOME: 'content-type-home',
   TYPE_1: 'content-type-1',
   TYPE_2: 'content-type-2',
   TYPE_3: 'content-type-3'
@@ -10,6 +11,8 @@ var ContentType = {
 
 ContentType.getTitle = function(contentType) {
   switch(contentType) {
+    case ContentType.HOME:
+      return '+';
     case ContentType.TYPE_1:
       return 'Type 1';
     case ContentType.TYPE_2:
@@ -22,6 +25,9 @@ ContentType.getTitle = function(contentType) {
 };
 
 ContentType.getIcon = function(contentType) {
+  if (ContentType.HOME === contentType) {
+    return null;
+  }
   return 'http://placehold.it/15x15';
 };
 
@@ -29,9 +35,38 @@ ContentType.getContent = function(contentType) {
   return ContentType.getTitle(contentType) + ' Content';
 };
 
+var TabModel = function(id, name, contentType) {
+  this.id = id;
+  this.name = name;
+  this.contentType = contentType;
+};
+
+$.extend(TabModel.prototype, {
+  getId: function() {
+    return this.id;
+  },
+
+  getIcon: function() {
+    return ContentType.getIcon(this.contentType);
+  },
+
+  getTitle: function() {
+    return ContentType.getTitle(this.contentType);
+  },
+
+  getContentType: function() {
+    return this.contentType;
+  }
+});
+
 var TabsModel = function() {
   this.activeTabIndex = 0;
   this.contentTypes = [ContentType.TYPE_1, ContentType.TYPE_2, ContentType.TYPE_3];
+
+  this.tabs = [];
+  this.initializeTabs();
+
+  this.tabId = 0;
 
   this.data = this.getNewData();
 };
@@ -40,7 +75,8 @@ $.extend(TabsModel.prototype, {
   getNewData: function() {
     return {
       activeTabIndex: this.activeTabIndex,
-      contentTypes: this.contentTypes
+      contentTypes: this.contentTypes,
+      tabs: this.tabs
     };
   },
 
@@ -54,6 +90,22 @@ $.extend(TabsModel.prototype, {
   setActiveTab: function(index) {
     this.activeTabIndex = index;
     this.updateData();
+  },
+
+  openTab: function(contentType) {
+    var name = ContentType.getTitle(contentType);
+    this.tabs.push(new TabModel(++this.tabId, name, contentType));
+    this.activeTabIndex = this.tabs.length - 1;
+    this.updateData();
+  },
+
+  initializeTabs: function() {
+    this.tabs = [this.getHomeTab()];
+  },
+
+  getHomeTab: function() {
+    // Special case
+    return new TabModel(0, null, ContentType.HOME);
   }
 });
 
@@ -83,10 +135,13 @@ EventBus.getInstance = function() {
 };
 
 var Actions = function() {
+  this.model = TabsModel.getInstance();
+
   this.eventBus = EventBus.getInstance();
 
   this.eventMap = {};
-  this.eventMap[Actions.EventType.ACTIVATE_TAB] = this.activateTab;
+  this.eventMap[Actions.EventType.ACTIVATE_TAB] = this.activateTab.bind(this);
+  this.eventMap[Actions.EventType.OPEN_TAB] = this.openTab.bind(this);
 
   this.setupListeners();
 };
@@ -99,9 +154,11 @@ $.extend(Actions.prototype, {
   },
 
   activateTab: function(event, properties) {
-    var model = TabsModel.getInstance();
-    model.setActiveTab(properties.index);
-    return true;
+    this.model.setActiveTab(properties.index);
+  },
+
+  openTab: function(event, properties) {
+    this.model.openTab(properties.contentType);
   }
 });
 
@@ -130,9 +187,13 @@ var TabList = React.createClass({
     var data = this.props.data;
 
     var tabs = data.tabs.map(function(tab, i) {
+      var content = tab.icon ?
+        (<span><img src={tab.icon} /> {tab.title}</span>) :
+        (<span>{tab.title}</span>);
+
       return (
         <ReactTabs.Tab key={i}>
-          <img src={tab.icon} /> {tab.title}
+          {content}
         </ReactTabs.Tab>
       );
     });
@@ -142,8 +203,6 @@ var TabList = React.createClass({
       return (<ReactTabs.TabPanel key={i}></ReactTabs.TabPanel>);
     });
 
-    console.log('TabList#render', this.props);
-
     return (
       <ReactTabs.Tabs onSelect={this.handleSelect} selectedIndex={data.activeTabIndex}>
         <ReactTabs.TabList>{tabs}</ReactTabs.TabList>{tabPanels}
@@ -151,13 +210,41 @@ var TabList = React.createClass({
     );
   },
 
-  /**
-   * @param {number} index
-   * @param {number} last
-   * @private
-   */
   handleSelect: function (index, last) {
     this.eventBus.dispatchEvent(Actions.EventType.ACTIVATE_TAB, { index: index });
+  }
+});
+
+var HomeTab = React.createClass({
+  componentWillMount: function() {
+    this.eventBus = EventBus.getInstance();
+    this.actions = Actions.getInstance();
+  },
+
+  render: function() {
+    return (
+      <ul>
+        <li>
+          <a onClick={this.handleOpen.bind(this, ContentType.TYPE_1)} href="javascript:void(0)">
+            Open Type 1
+          </a>
+        </li>
+        <li>
+          <a onClick={this.handleOpen.bind(this, ContentType.TYPE_2)} href="javascript:void(0)">
+            Open Type 2
+          </a>
+        </li>
+        <li>
+          <a onClick={this.handleOpen.bind(this, ContentType.TYPE_3)} href="javascript:void(0)">
+            Open Type 3
+          </a>
+        </li>
+      </ul>
+    );
+  },
+
+  handleOpen: function(contentType) {
+    this.eventBus.dispatchEvent(Actions.EventType.OPEN_TAB, { contentType: contentType });
   }
 });
 
@@ -169,14 +256,24 @@ var TabContent = React.createClass({
       if (tabData.active) {
         classNames += ' active';
       }
+
+      if (ContentType.HOME === tabData.contentType) {
+        return (
+          <div key={tabData.id} className={classNames}>
+            <HomeTab />
+          </div>
+        );
+      }
+
       return (
         <div key={tabData.id} className={classNames}>
-          {tabData.content}
+          <div>ContentType: {tabData.text}</div>
+          <div>ID: {tabData.id}</div>
         </div>
       );
-    });
+    }, this);
 
-    return (<div>{tabContents}</div>);
+    return (<div className="tab-content-container">{tabContents}</div>);
   }
 });
 
@@ -211,36 +308,30 @@ var TabContainer = React.createClass({
   },
 
   update: function() {
-    console.log('TabContainer#update', this.getModel().data);
     this.setState(this.getModel().data);
   },
 
-  /**
-   * @private
-   */
   getTabListData: function() {
     var modelData = this.getModel().data;
     return {
       activeTabIndex: modelData.activeTabIndex,
-      tabs: modelData.contentTypes.map(function(contentType) {
+      tabs: modelData.tabs.map(function(tab) {
         return {
-          icon: ContentType.getIcon(contentType),
-          title: ContentType.getTitle(contentType)
+          icon: tab.getIcon(),
+          title: tab.getTitle()
         }
       })
     };
   },
 
-  /**
-   * @private
-   */
   getTabContentData: function() {
     var modelData = this.getModel().data;
-    return modelData.contentTypes.map(function(contentType, i) {
+    return modelData.tabs.map(function(tab, i) {
       return {
-        id: i,
+        id: tab.getId(),
         active: modelData.activeTabIndex === i,
-        content: ContentType.getContent(contentType)
+        contentType: tab.getContentType(),
+        text: tab.getTitle()
       };
     });
   }
