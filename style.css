@@ -4,20 +4,3 @@
   height: 400px;
   overflow: hidden;
 }
-
-.react-tabs {
-  white-space: nowrap;
-}
-
-.react-tabs [role="tablist"] {
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-.react-tab-content {
-  display: none;
-}
-
-.react-tab-content.active {
-  display: block;
-}
