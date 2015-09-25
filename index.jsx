@@ -100,6 +100,14 @@ $.extend(TabsModel.prototype, {
     this.updateData();
   },
 
+  closeTab: function(index) {
+    this.tabs.splice(index, 1);
+    this.activeTabIndex = this.tabs.length === 1 ?
+      0 : // home tab
+      index; // tab to the right
+    this.updateData();
+  },
+
   initializeTabs: function() {
     this.tabs = [this.getHomeTab()];
   },
@@ -143,6 +151,7 @@ var Actions = function() {
   this.eventMap = {};
   this.eventMap[Actions.EventType.ACTIVATE_TAB] = this.activateTab.bind(this);
   this.eventMap[Actions.EventType.OPEN_TAB] = this.openTab.bind(this);
+  this.eventMap[Actions.EventType.CLOSE_TAB] = this.closeTab.bind(this);
 
   this.setupListeners();
 };
@@ -160,6 +169,10 @@ $.extend(Actions.prototype, {
 
   openTab: function(event, properties) {
     this.model.openTab(properties.contentType);
+  },
+
+  closeTab: function(event, properties) {
+    this.model.closeTab(properties.index);
   }
 });
 
@@ -178,6 +191,33 @@ Actions.getInstance = function() {
 };
 
 // Child views
+var TabMenu = React.createClass({
+  componentWillMount: function() {
+    this.eventBus = EventBus.getInstance();
+    this.actions = Actions.getInstance();
+  },
+
+  render: function() {
+    return (
+      <span className="dropdown">
+        <button type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span className="caret"></span>
+        </button>
+        <ul className="dropdown-menu">
+          <li onClick={this.closeTab.bind(this, this.props.index)}>Close</li>
+          <li>Duplicate</li>
+          <li>Rename</li>
+          <li>Delete</li>
+        </ul>
+      </span>
+    );
+  },
+
+  closeTab: function(index) {
+    this.eventBus.dispatchEvent(Actions.EventType.CLOSE_TAB, { index: index });
+  }
+});
+
 var Tab = React.createClass({
   componentWillMount: function() {
     this.eventBus = EventBus.getInstance();
@@ -185,18 +225,35 @@ var Tab = React.createClass({
   },
 
   render: function() {
-    var content = this.props.icon ?
-      (<span><img src={this.props.icon} /> {this.props.title}</span>) :
-      (<span>{this.props.title}</span>);
-
     var classes = React.addons.classSet({
       'active': this.props.active
     });
+    var content = this.getTabContent();
 
     return (
       <li className={classes} onClick={this.handleSelect.bind(this, this.props.index)}>
         <a href={'#' + this.props.tabName}>{content}</a>
       </li>
+    );
+  },
+
+  getTabContent: function() {
+    return (
+      <span>
+        {(() => {
+          if (this.props.icon) {
+            return (<img src={this.props.icon} />)
+          }
+        })()}
+
+        {this.props.title}
+
+        {(() => {
+          if (!this.props.home) {
+            return (<TabMenu index={this.props.index} />)
+          }
+        })()}
+      </span>
     );
   },
 
@@ -223,7 +280,7 @@ var TabList = React.createClass({
   }
 });
 
-var HomeTab = React.createClass({
+var HomeTabContent = React.createClass({
   componentWillMount: function() {
     this.eventBus = EventBus.getInstance();
     this.actions = Actions.getInstance();
@@ -260,21 +317,22 @@ var TabContent = React.createClass({
   render: function() {
     // One content div per content type
     var tabContents = this.props.data.map(function(tabData) {
-      var classNames = 'tab-pane';
-      if (tabData.active) {
-        classNames += ' active';
-      }
+
+      var classes = React.addons.classSet({
+        'tab-pane': true,
+        'active': tabData.active
+      });
 
       if (ContentType.HOME === tabData.contentType) {
         return (
-          <div key={tabData.id} id={tabData.contentType} className={classNames}>
-            <HomeTab />
+          <div key={tabData.id} id={tabData.contentType} className={classes}>
+            <HomeTabContent />
           </div>
         );
       }
 
       return (
-        <div key={tabData.id} id={tabData.contentType} className={classNames}>
+        <div key={tabData.id} id={tabData.contentType} className={classes}>
           <div>ContentType: {tabData.text}</div>
           <div>ID: {tabData.id}</div>
         </div>
@@ -324,6 +382,7 @@ var TabContainer = React.createClass({
     return {
       tabs: modelData.tabs.map(function(tab, i) {
         return {
+          home: ContentType.HOME === tab.getContentType(),
           active: modelData.activeTabIndex === i,
           icon: tab.getIcon(),
           title: tab.getTitle(),
