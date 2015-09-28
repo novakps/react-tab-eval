@@ -60,6 +60,7 @@ $.extend(TabModel.prototype, {
 
 var TabsModel = function() {
   this.activeTabIndex = 0;
+  this.offset = 0;
   this.contentTypes = [ContentType.HOME, ContentType.TYPE_1, ContentType.TYPE_2, ContentType.TYPE_3];
 
   this.tabs = [];
@@ -76,7 +77,8 @@ $.extend(TabsModel.prototype, {
       activeTabIndex: this.activeTabIndex,
       activeTabContentType: this.tabs[this.activeTabIndex].getContentType(),
       contentTypes: this.contentTypes,
-      tabs: this.tabs
+      tabs: this.tabs,
+      offset: this.offset
     };
   },
 
@@ -105,6 +107,15 @@ $.extend(TabsModel.prototype, {
     this.activeTabIndex = this.tabs.length === 1 ?
       0 : // home tab
       index; // tab to the right
+    this.updateData();
+  },
+
+  scrollTabs: function(direction, offset) {
+    if ('left' === direction) {
+      this.offset -= offset;
+    } else {
+      this.offset += offset;
+    }
     this.updateData();
   },
 
@@ -152,6 +163,7 @@ var Actions = function() {
   this.eventMap[Actions.EventType.ACTIVATE_TAB] = this.activateTab.bind(this);
   this.eventMap[Actions.EventType.OPEN_TAB] = this.openTab.bind(this);
   this.eventMap[Actions.EventType.CLOSE_TAB] = this.closeTab.bind(this);
+  this.eventMap[Actions.EventType.SCROLL_TABS] = this.scrollTabs.bind(this);
 
   this.setupListeners();
 };
@@ -173,13 +185,18 @@ $.extend(Actions.prototype, {
 
   closeTab: function(event, properties) {
     this.model.closeTab(properties.index);
+  },
+
+  scrollTabs: function(event, properties) {
+    this.model.scrollTabs(properties.direction, properties.offset);
   }
 });
 
 Actions.EventType = {
   ACTIVATE_TAB: 'activate_tab',
   CLOSE_TAB: 'close_tab',
-  OPEN_TAB: 'open_tab'
+  OPEN_TAB: 'open_tab',
+  SCROLL_TABS: 'scroll_tabs'
 };
 
 Actions.instance = undefined;
@@ -215,6 +232,7 @@ var TabMenu = React.createClass({
 
   closeTab: function(index) {
     this.eventBus.dispatchEvent(Actions.EventType.CLOSE_TAB, { index: index });
+    return false;
   }
 });
 
@@ -242,7 +260,7 @@ var Tab = React.createClass({
       <span>
         {(() => {
           if (this.props.icon) {
-            return (<img src={this.props.icon} />)
+            return (<img className="tab-icon" src={this.props.icon} />)
           }
         })()}
 
@@ -262,6 +280,50 @@ var Tab = React.createClass({
   }
 });
 
+var TabNavButton = React.createClass({
+  componentWillMount: function() {
+    this.eventBus = EventBus.getInstance();
+    this.actions = Actions.getInstance();
+  },
+
+  render: function() {
+    var direction = this.props.direction;
+    var buttonClasses = React.addons.classSet({
+      'tab-navigation': true,
+      'tab-navigation-left': 'left' === direction,
+      'tab-navigation-right': 'left' !== direction
+    });
+
+    var buttonStyle = 'left' === direction ?
+      { 'left': this.props.offset } :
+      { 'right': -this.props.offset };
+
+    var spanClasses = React.addons.classSet({
+      'glyphicon': true,
+      'glyphicon-chevron-left': 'left' === direction,
+      'glyphicon-chevron-right': 'left' !== direction
+    });
+
+    return (
+      <button type="button"
+          className={buttonClasses}
+          style={buttonStyle}
+          data-direction={direction}
+          onClick={this.handleClick}>
+        <span className={spanClasses}></span>
+      </button>
+    );
+  },
+
+  handleClick: function() {
+    var eventMap = {
+      direction: this.props.direction,
+      offset: 25
+    };
+    this.eventBus.dispatchEvent(Actions.EventType.SCROLL_TABS, eventMap);
+  }
+});
+
 var TabList = React.createClass({
   render: function () {
     var data = this.props.data;
@@ -273,10 +335,18 @@ var TabList = React.createClass({
     }, this);
 
     return (
-      <ul className="nav nav-tabs">
-        {tabs}
-      </ul>
+      <div className="tab-list">
+        <TabNavButton direction="left" offset={this.props.offset} />
+        <ul className="nav nav-tabs">
+          {tabs}
+        </ul>
+        <TabNavButton direction="right" offset={this.props.offset} />
+      </div>
     );
+  },
+
+  componentDidUpdate: function() {
+    $(this.getDOMNode()).scrollLeft(this.props.offset);
   }
 });
 
@@ -359,7 +429,7 @@ var TabContainer = React.createClass({
 
     return (
       <div className="tab-container">
-        <TabList data={tabListData} />
+        <TabList data={tabListData} offset={this.state.offset} />
         <TabContent data={tabContentData} />
       </div>
     );
@@ -387,7 +457,7 @@ var TabContainer = React.createClass({
           icon: tab.getIcon(),
           title: tab.getTitle(),
           tabName: tab.getContentType()
-        }
+        };
       })
     };
   },
@@ -400,8 +470,8 @@ var TabContainer = React.createClass({
         active: modelData.activeTabContentType === contentType,
         contentType: contentType,
         text: ContentType.getTitle(contentType)
-      }
-    })
+      };
+    });
   }
 });
 

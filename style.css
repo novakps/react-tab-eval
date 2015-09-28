@@ -4,3 +4,37 @@
   height: 400px;
   overflow: hidden;
 }
+
+.tab-list {
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tab-navigation {
+  position: absolute;
+  top: 0;
+  height: 43px;
+  z-index: 1;
+}
+
+.nav-tabs {
+}
+
+.nav-tabs > li {
+  float: none;
+  display: inline-block;
+}
+
+.tab-icon {
+  padding-right: 5px;
+}
+
+.dropdown {
+  padding-left: 5px;
+}
+
+.dropdown button {
+  background-color: inherit;
+  border: none;
+}
